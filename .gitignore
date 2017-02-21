@@ -1,0 +1,198 @@
+一、简单的SS2框架搭建web.xml文档的配置：
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://java.sun.com/xml/ns/javaee"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+	id="WebApp_ID" version="2.5">
+		
+	<!-- 配置spring监听器 -->
+	<listener>
+		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+	</listener>
+	<context-param>
+		<param-name>contextConfigLocation</param-name>
+		<param-value>classpath:applicationContext.xml</param-value>
+	</context-param>
+
+	<!-- 配置struts2的过滤器 -->
+	
+	<filter>
+		<filter-name>struts2</filter-name>
+		<filter-class>org.apache.struts2.dispatcher.filter.StrutsPrepareAndExecuteFilter</filter-class>
+	
+	</filter>
+	<filter-mapping>
+		<filter-name>struts2</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+
+	<display-name></display-name>
+	<welcome-file-list>
+		<welcome-file>index.jsp</welcome-file>
+	</welcome-file-list>
+</web-app>
+二、struts.xml文档的配置
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE struts PUBLIC
+    "-//Apache Software Foundation//DTD Struts Configuration 2.5//EN"
+    "http://struts.apache.org/dtds/struts-2.5.dtd">
+<struts>
+	<constant name="struts.devMode" value="true" />
+	<package name="struts" extends="struts-default" namespace="/">
+	  <global-allowed-methods>addDepartment,login</global-allowed-methods>
+		<action name="employee_*" class="employeeAction" method="{1}">
+		<result name="input">/index.jsp</result>		
+		<result name="success" type="redirect">/success.jsp</result>
+		<!--  <allowed-methods>login</allowed-methods> -->
+		</action>		
+		<action name="department_*" class="departmentAction" method="{1}">
+		<result name="success" type="redirect">/success.jsp</result>
+		<!-- <allowed-methods>addDepartment</allowed-methods>  -->
+		</action>
+	</package>
+</struts>
+三、applicationContext.xml文档配置
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	   			http://www.springframework.org/schema/beans/spring-beans.xsd
+	   			http://www.springframework.org/schema/aop
+	   			http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
+	   			http://www.springframework.org/schema/tx
+	   			http://www.springframework.org/schema/tx/spring-tx-4.0.xsd
+	   			http://www.springframework.org/schema/context 
+	   			http://www.springframework.org/schema/context/spring-context-4.0.xsd
+	   			">
+	<!-- 包扫描 -->
+	<context:component-scan base-package="com.infy.employee" />
+	<!--引入外部属性文件 -->
+	<context:property-placeholder location="classpath:jdbc.properties" />
+	<!-- 配置c3p0连接池 -->
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource"
+		destroy-method="close">
+		<property name="driverClass" value="${jdbc.driver}" />
+		<property name="jdbcUrl" value="${jdbc.url}" />
+		<property name="user" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+
+		<!--连接池中保留的最大连接数。Default: 15 -->
+		<property name="maxPoolSize" value="30" />
+
+		<!--初始化时获取的连接数，取值应在minPoolSize与maxPoolSize之间。Default: 3 -->
+		<property name="initialPoolSize" value="10" />
+
+
+		<!--最大空闲时间,60秒内未使用则连接被丢弃。若为0则永不丢弃。Default: 0 -->
+		<property name="maxIdleTime" value="60" />
+
+
+		<!--当连接池中的连接耗尽的时候c3p0一次同时获取的连接数。Default: 3 -->
+		<property name="acquireIncrement" value="5" />
+
+		<!--JDBC的标准参数，用以控制数据源内加载的PreparedStatements数量。但由于预缓存的statements 属于单个connection而不是整个连接池。所以设置这个参数需要考虑到多方面的因素。 
+			如果maxStatements与maxStatementsPerConnection均为0，则缓存被关闭。Default: 0 -->
+		<property name="maxStatements" value="0" />
+
+
+		<!--每60秒检查所有连接池中的空闲连接。Default: 0 -->
+		<property name="idleConnectionTestPeriod" value="60" />
+
+
+		<!--定义在从数据库获取新连接失败后重复尝试的次数。Default: 30 -->
+		<property name="acquireRetryAttempts" value="30" />
+
+
+		<!--获取连接失败将会引起所有等待连接池来获取连接的线程抛出异常。但是数据源仍有效 保留，并在下次调用getConnection()的时候继续尝试获取连接。如果设为true，那么在尝试 
+			获取连接失败后该数据源将申明已断开并永久关闭。Default: false -->
+		<property name="breakAfterAcquireFailure" value="true" />
+
+		<!--因性能消耗大请只在需要的时候使用它。如果设为true那么在每个connection提交的 时候都将校验其有效性。建议使用idleConnectionTestPeriod或automaticTestTable 
+			等方法来提升连接测试的性能。Default: false -->
+		<property name="testConnectionOnCheckout" value="false" />
+	</bean>
+
+
+
+	<!-- 配置hibernate的相关属性 -->
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+		<!--注入连接池 -->
+		<property name="dataSource" ref="dataSource" />
+		<!-- 配置hibernate的属性 -->
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">org.hibernate.dialect.OracleDialect</prop>
+				<prop key="hibernate.show_sql">true</prop>
+				<!-- 2.2 格式化sql -->
+				<prop key="hibernate.format_sql">true</prop>
+				<!-- 2.3 自动建表 -->
+				<prop key="hibernate.hbm2ddl.auto">update</prop>
+			</props>
+		</property>
+		<!-- 加载hibernate中的映射文件 -->
+		<property name="mappingResources">
+			<list>
+				<value>com/infy/employee/entity/Department.hbm.xml</value>
+				<value>com/infy/employee/entity/Employee.hbm.xml</value>
+			</list>
+		</property>
+	</bean>
+	<!-- 配置事物管理器 -->
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate5.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory">
+		</property>
+	</bean>
+	
+ <bean id="persistenceExceptionTranslationPostProcessor"
+       class="org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor" />
+    
+   <!--  声明式容器事务管理 ,transaction-manager指定事务管理器为transactionManager -->
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+    
+    <tx:advice id="baseServiceAdvice" transaction-manager="transactionManager">
+        <tx:attributes>       
+            <tx:method name="addDepartment*" propagation="REQUIRED"/> 
+            <tx:method name="find*" propagation="REQUIRED"/>
+            <tx:method name="save*" propagation="REQUIRED"/>
+            <tx:method name="update*" propagation="REQUIRED"/>
+            <tx:method name="insert*" propagation="REQUIRED"/>
+            <tx:method name="delete*" propagation="REQUIRED"/>
+        </tx:attributes>
+    </tx:advice>
+    
+	<!-- employee action -->
+	<bean id="employeeAction" class="com.infy.employee.action.EmployeeAction"
+		scope="prototype">
+		<property name="employeeServiceImpl" ref="employeeServiceImpl" />
+	</bean>
+	<!--department action-->
+	<bean id="departmentAction" class="com.infy.employee.action.DepartmentAction"
+		scope="prototype">
+		<property name="departmentServiceImpl" ref="departmentServiceImpl" />
+	</bean>
+
+	<!--employee service-->
+	<bean id="employeeServiceImpl" class="com.infy.employee.service.Impl.EmployeeServiceImpl">
+		<property name="employeeDao" ref="employeeDao" />
+	</bean>
+	<!--department service-->
+	<bean id="departmentServiceImpl" class="com.infy.employee.service.Impl.DepartmentServiceImpl">
+		<property name="departmentDaoImpl" ref="departmentDaoImpl" />
+	</bean>
+	<!--配置dao-->
+	<bean id="employeeDao" class="com.infy.employee.dao.Impl.EmployeeDaoImpl">
+		<!--手动注入sessionFactory-->
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+	<bean id="departmentDaoImpl" class="com.infy.employee.dao.Impl.DepartmentDaoImpl">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean> 
+</beans>
+四、jdbc.property信息文档配置
+jdbc.driver = oracle.jdbc.driver.OracleDriver
+jdbc.url = jdbc:oracle:thin:@localhost:1521:xe
+jdbc.username = ***
+jdbc.password = ****
